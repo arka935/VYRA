@@ -52,7 +52,7 @@ Batas total kode per satu jawaban adalah ${cfg.limit} baris. Jika kebutuhan mele
 
 function compactMessages(input){
   const src=Array.isArray(input)?input.slice(-14):[];
-  const out=[]; let chars=0; const MAX=24000;
+  const out=[]; let chars=0; const MAX=9000;
   for(let i=src.length-1;i>=0;i--){
     const m=src[i];
     if(!m || !["user","assistant"].includes(m.role) || typeof m.content!=="string") continue;
@@ -88,7 +88,7 @@ export default async function handler(req){
     messages:[{role:"system",content:systemPrompt(cfg)},...compactMessages(body.messages)],
     temperature:0.7,
     top_p:0.9,
-    max_completion_tokens:4096,
+    max_completion_tokens: body.mode === "core" ? 3500 : 4096,
     stream:true
   };
 
