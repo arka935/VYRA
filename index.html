@@ -65,7 +65,7 @@ body{
 .think-chip span{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;background:#17142b;border:1px solid #493b81;color:#d8cffc;font-size:12px}
 .composer{width:min(860px,100%);margin:auto;border:1px solid #35405b;background:#0f1522;border-radius:22px;padding:8px;display:flex;gap:8px;align-items:flex-end;position:relative;box-shadow:0 20px 48px rgba(0,0,0,.28)}
 .plus-btn,.send-btn{width:46px;height:46px;flex:0 0 46px;border:0;border-radius:14px;font-size:20px}
-.plus-btn{background:#1b2231;color:white}.send-btn{background:linear-gradient(135deg,#2f9bff,#9d51ff);color:white;font-weight:900}
+.plus-btn{background:#1b2231;color:white}.send-btn{background:linear-gradient(135deg,#2f9bff,#9d51ff);color:white;font-weight:900}.send-btn:disabled{cursor:not-allowed}
 textarea{flex:1;min-height:48px;max-height:170px;border:0;outline:0;resize:none;background:transparent;color:white;padding:12px;line-height:1.45;font-size:16px}
 .plus-menu{display:none;position:absolute;left:7px;bottom:62px;width:220px;border:1px solid #30384f;border-radius:16px;background:#121722;padding:7px;box-shadow:0 18px 48px rgba(0,0,0,.45)}
 .plus-menu.open{display:block}
@@ -153,28 +153,28 @@ const MODES = [
     description:"Cepat dan pintar. Untuk coding, hasil ditampilkan menggunakan code block.",
     limit:342,fileMode:"codeblock",
     backendModel:"groq/qwen/qwen-3-32b",
-    selectable:true
+    selectable:true,connected:true
   },
   {
     id:"core",name:"VYRA-1.5-Core",badge:"Core",
     description:"Pintar dan fokus pada pembuatan file. Hasil coding dibuat langsung sebagai file, bukan code block.",
     limit:789,fileMode:"file",
-    backendModel:"gpt/oss-20b",
-    selectable:true
+    backendModel:"openai/gpt-oss-20b",
+    selectable:true,connected:true
   },
   {
     id:"maks",name:"VYRA-1.0-Maks",badge:"Maks",
     description:"Mendukung dua cara: code block selama chat dan file siap download/install di akhir.",
     limit:1120,fileMode:"hybrid",
-    backendModel:"gpt/oss-120b",
-    selectable:true
+    backendModel:"openai/gpt-oss-120b",
+    selectable:true,connected:true
   },
   {
     id:"expert",name:"VYRA-1.9-Expert",badge:"Expert",
     description:"Mode paling luas untuk coding kompleks. Mendukung code block dan file siap install.",
     limit:3063,fileMode:"hybrid",
-    backendModel:"groq/deepseek-r1-distill-llama-70b",
-    selectable:true
+    backendModel:"deepseek-r1-distill-llama-70b",
+    selectable:true,connected:true
   },
   {
     id:"vision-preview",name:"VYRA-2.5-Flash-Preview",badge:"Preview",
@@ -233,6 +233,20 @@ function welcome(){
     <div class="welcome-mode"><span class="mode-dot"></span>${m.name}${thinkEnabled?' • Think':''}</div>
   </div>`
 }
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+}
+function formatAssistant(text){
+  let s=escapeHtml(text||"");
+  s=s.replace(/```([\w+-]*)\n([\s\S]*?)```/g,(all,lang,code)=>{
+    return `<pre style="overflow:auto;background:#070a12;border:1px solid #283149;border-radius:12px;padding:12px"><code>${code}</code></pre>`;
+  });
+  s=s.replace(/`([^`\n]+)`/g,"<code style='background:#171e2d;padding:2px 5px;border-radius:5px'>$1</code>");
+  s=s.replace(/\n/g,"<br>");
+  return s;
+}
+
 function renderMessages(){
   const c=chats[currentId];
   if(!c||!c.messages.length){welcome();return}
@@ -242,7 +256,13 @@ function renderMessages(){
     if(m.role==="assistant"){
       const av=document.createElement("div");av.className="avatar";av.innerHTML='<img src="assets/vyra-logo.png" alt="VYRA">';row.appendChild(av)
     }
-    const bubble=document.createElement("div");bubble.className="bubble";bubble.textContent=m.content;row.appendChild(bubble);messagesEl.appendChild(row)
+    const bubble=document.createElement("div");bubble.className="bubble";
+    if(m.role==="assistant"){
+      bubble.innerHTML=formatAssistant(m.content);
+    }else{
+      bubble.textContent=m.content;
+    }
+    row.appendChild(bubble);messagesEl.appendChild(row)
   });
   requestAnimationFrame(()=>document.getElementById("chat").scrollTop=document.getElementById("chat").scrollHeight)
 }
@@ -271,14 +291,85 @@ document.getElementById("thinkToggle").onclick=()=>{
   thinkEnabled=!thinkEnabled;save();updateModeUI();plusMenu.classList.remove("open");renderMessages()
 };
 
-composer.onsubmit=e=>{
-  e.preventDefault();const text=input.value.trim();if(!text)return;
+composer.onsubmit=async e=>{
+  e.preventDefault();
+  const text=input.value.trim();
+  if(!text)return;
+
+  const mode=currentMode();
   if(!currentId||!chats[currentId])createChat();
   const c=chats[currentId];
+
   if(!c.messages.length)c.title=text.length>40?text.slice(0,40)+"…":text;
+
   c.messages.push({role:"user",content:text});
-  c.messages.push({role:"assistant",content:`VYRA UI siap. Mode aktif: ${currentMode().name}${thinkEnabled?" + Think":""}. Backend AI belum disambungkan pada tahap ini.`});
-  c.updated=Date.now();input.value="";input.style.height="auto";save();renderHistory();renderMessages()
+  c.updated=Date.now();
+  input.value="";
+  input.style.height="auto";
+  save();
+  renderHistory();
+  renderMessages();
+
+  const typing={
+    role:"assistant",
+    content:thinkEnabled?"VYRA sedang berpikir…":"VYRA sedang menjawab…",
+    pending:true
+  };
+  c.messages.push(typing);
+  renderMessages();
+
+  const sendBtn=document.querySelector(".send-btn");
+  sendBtn.disabled=true;
+  sendBtn.style.opacity=".55";
+
+  try{
+    const history=c.messages
+      .filter(m=>!m.pending)
+      .slice(-12)
+      .map(m=>({role:m.role,content:m.content}));
+
+    const r=await fetch("/api/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        mode:mode.id,
+        think:thinkEnabled,
+        messages:history
+      })
+    });
+
+    if(!r.ok){
+      const msg=await r.text();
+      throw new Error(msg||("HTTP "+r.status));
+    }
+
+    const reader=r.body.getReader();
+    const decoder=new TextDecoder();
+    let full="";
+    typing.content="";
+
+    while(true){
+      const {value,done}=await reader.read();
+      if(done)break;
+      full+=decoder.decode(value,{stream:true});
+      typing.content=full;
+      renderMessages();
+    }
+    full+=decoder.decode();
+    typing.content=full||"Tidak ada respons.";
+    delete typing.pending;
+
+  }catch(err){
+    typing.content="Gagal: "+err.message;
+    delete typing.pending;
+  }finally{
+    c.updated=Date.now();
+    save();
+    renderHistory();
+    renderMessages();
+    sendBtn.disabled=false;
+    sendBtn.style.opacity="";
+  }
 };
 input.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();composer.requestSubmit()}};
 input.oninput=()=>{input.style.height="auto";input.style.height=Math.min(input.scrollHeight,170)+"px"};
