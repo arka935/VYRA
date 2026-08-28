@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#070911">
+<title>VYRA</title>
+<style>
+:root{
+  --bg:#070911;--bg2:#0b0f1a;--panel:#0f1421;--panel2:#151b2b;--line:#252d42;
+  --text:#f7f8fd;--muted:#8f9aae;--blue:#3aa8ff;--violet:#9b5cff;--cyan:#40e8ff;
+  --good:#27d9a2;--warn:#ffbd4a;--danger:#ff667d;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,textarea{font:inherit}button{cursor:pointer}
+body{
+  background:
+    radial-gradient(circle at 75% -10%,rgba(70,84,255,.13),transparent 32%),
+    radial-gradient(circle at 25% 105%,rgba(129,58,255,.08),transparent 36%),
+    var(--bg);
+}
+.app{min-height:100vh;display:grid;grid-template-columns:292px minmax(0,1fr)}
+.sidebar{
+  min-width:0;border-right:1px solid var(--line);background:rgba(8,11,20,.94);
+  padding:14px;display:flex;flex-direction:column;gap:12px;position:sticky;top:0;height:100vh;z-index:30
+}
+.brand-block{display:flex;align-items:center;gap:11px;padding:5px 3px 8px}
+.brand-logo{width:44px;height:44px;object-fit:cover;border-radius:13px;box-shadow:0 0 22px rgba(90,105,255,.22)}
+.brand-name{font-size:20px;font-weight:950;letter-spacing:.8px}
+.close-history{margin-left:auto;width:40px;height:40px;border:0;border-radius:12px;background:#151b2a;color:white;font-size:20px;display:none}
+.new-chat{width:100%;border:1px solid rgba(120,92,255,.55);border-radius:14px;padding:12px 13px;color:white;font-weight:850;text-align:left;background:linear-gradient(135deg,rgba(28,108,255,.95),rgba(165,62,255,.95));box-shadow:0 9px 26px rgba(89,72,255,.18)}
+.history-label{padding:7px 6px 0;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1.2px;font-weight:800}
+.history{overflow:auto;display:flex;flex-direction:column;gap:5px;min-height:0}
+.history button{border:1px solid transparent;border-radius:12px;background:transparent;color:#dce2ef;text-align:left;padding:10px 11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history button.active{background:#151c2e;border-color:#2b3857}
+.sidebar-foot{margin-top:auto;padding:11px;border:1px solid var(--line);border-radius:14px;background:#0d121f}
+.sidebar-foot small{display:block;color:var(--muted);line-height:1.45}
+.main{min-width:0;min-height:100vh;display:flex;flex-direction:column}
+.topbar{height:65px;display:flex;align-items:center;gap:10px;padding:0 18px;border-bottom:1px solid var(--line);background:rgba(7,9,17,.78);backdrop-filter:blur(16px);position:sticky;top:0;z-index:20}
+.menu-btn{display:none;width:42px;height:42px;border:0;border-radius:12px;background:#151b2a;color:white;font-size:20px}
+.top-brand{font-weight:950;letter-spacing:.6px}
+.spacer{flex:1}
+.mode-button{
+  display:flex;align-items:center;gap:9px;min-width:0;border:1px solid #303a55;border-radius:13px;
+  background:#111827;color:white;padding:9px 11px;font-weight:800
+}
+.mode-dot{width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--violet));box-shadow:0 0 12px #6d7cff}
+.chat{flex:1;min-width:0;padding:28px 16px 165px}
+.chat-inner{width:min(860px,100%);margin:auto}
+.welcome{text-align:center;padding:8vh 10px 40px}
+.welcome-logo{width:118px;height:118px;object-fit:cover;border-radius:29px;box-shadow:0 22px 75px rgba(80,74,255,.22)}
+.welcome h1{margin:19px 0 7px;font-size:clamp(38px,7vw,60px);letter-spacing:1px}
+.welcome p{margin:0 auto;color:var(--muted);max-width:560px;line-height:1.6}
+.welcome-mode{margin-top:17px;display:inline-flex;align-items:center;gap:8px;border:1px solid #28334e;background:#101727;border-radius:999px;padding:8px 11px;color:#cdd6e9;font-size:13px}
+.message{display:grid;grid-template-columns:38px minmax(0,1fr);gap:10px;margin-bottom:19px}
+.message.user{grid-template-columns:minmax(0,1fr)}
+.message.user .bubble{justify-self:end;background:#24243a;border-color:#3b3d5d;max-width:min(680px,88%)}
+.avatar{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:#101829;border:1px solid #26314c;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.bubble{padding:13px 15px;border:1px solid var(--line);border-radius:17px;background:#0f1523;line-height:1.6;overflow-wrap:anywhere}
+.composer-wrap{position:fixed;left:292px;right:0;bottom:0;padding:17px 16px 21px;background:linear-gradient(transparent,#070911 34%);z-index:24}
+.think-chip{width:min(860px,100%);margin:0 auto 7px;display:none}
+.think-chip.show{display:flex}
+.think-chip span{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;background:#17142b;border:1px solid #493b81;color:#d8cffc;font-size:12px}
+.composer{width:min(860px,100%);margin:auto;border:1px solid #35405b;background:#0f1522;border-radius:22px;padding:8px;display:flex;gap:8px;align-items:flex-end;position:relative;box-shadow:0 20px 48px rgba(0,0,0,.28)}
+.plus-btn,.send-btn{width:46px;height:46px;flex:0 0 46px;border:0;border-radius:14px;font-size:20px}
+.plus-btn{background:#1b2231;color:white}.send-btn{background:linear-gradient(135deg,#2f9bff,#9d51ff);color:white;font-weight:900}
+textarea{flex:1;min-height:48px;max-height:170px;border:0;outline:0;resize:none;background:transparent;color:white;padding:12px;line-height:1.45;font-size:16px}
+.plus-menu{display:none;position:absolute;left:7px;bottom:62px;width:220px;border:1px solid #30384f;border-radius:16px;background:#121722;padding:7px;box-shadow:0 18px 48px rgba(0,0,0,.45)}
+.plus-menu.open{display:block}
+.plus-menu button{width:100%;display:flex;align-items:center;gap:11px;border:0;border-radius:12px;background:transparent;color:white;padding:11px;text-align:left}
+.plus-menu button:hover{background:#1b2232}
+.tool-icon{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:#20283a}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.2s;z-index:45}
+.overlay.open{opacity:1;pointer-events:auto}
+.mode-sheet{
+  position:fixed;z-index:50;right:18px;top:76px;width:min(430px,calc(100vw - 28px));max-height:calc(100vh - 95px);
+  overflow:auto;background:#0d121e;border:1px solid #2b344b;border-radius:20px;padding:12px;box-shadow:0 24px 70px rgba(0,0,0,.52);
+  display:none
+}
+.mode-sheet.open{display:block}
+.mode-head{display:flex;align-items:center;justify-content:space-between;padding:4px 3px 10px}
+.mode-head h3{margin:0}.mode-close{width:38px;height:38px;border:0;border-radius:11px;background:#171e2d;color:white}
+.mode-list{display:grid;gap:9px}
+.mode-card{width:100%;position:relative;border:1px solid #2a344b;border-radius:16px;background:#111725;color:white;padding:13px;text-align:left}
+.mode-card.selected{border-color:#657bff;box-shadow:inset 0 0 0 1px rgba(92,118,255,.38)}
+.mode-card.locked{opacity:.53;cursor:not-allowed}
+.mode-title{display:flex;align-items:center;gap:9px;font-weight:900}
+.mode-badge{margin-left:auto;padding:4px 7px;border-radius:999px;font-size:10px;border:1px solid #38445d;color:#aeb9cc}
+.mode-card p{margin:8px 0 7px;color:#aab4c6;font-size:13px;line-height:1.45}
+.mode-meta{display:flex;gap:7px;flex-wrap:wrap;color:#8995aa;font-size:11px}
+.lock-text{color:#ffcf72!important}
+.mobile-side-overlay{display:none}
+@media(max-width:850px){
+  .app{display:block}.sidebar{position:fixed;left:0;top:0;bottom:0;width:min(86vw,320px);height:auto;transform:translateX(-102%);transition:.22s;z-index:60}
+  .sidebar.open{transform:none}.close-history{display:block}.menu-btn{display:block}
+  .composer-wrap{left:0}.mobile-side-overlay{display:block}.mode-sheet{left:14px;right:14px;top:72px;width:auto}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand-block">
+      <img src="assets/vyra-logo.png" class="brand-logo" alt="Logo VYRA">
+      <div class="brand-name">VYRA</div>
+      <button class="close-history" id="closeHistory" aria-label="Tutup history">✕</button>
+    </div>
+    <button class="new-chat" id="newChat">＋ New Chat</button>
+    <div class="history-label">History Chat</div>
+    <div class="history" id="history"></div>
+    <div class="sidebar-foot"><small>VYRA • Think • Create • Build</small></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="menu-btn" id="openHistory" aria-label="Buka history">☰</button>
+      <div class="top-brand">VYRA</div>
+      <div class="spacer"></div>
+      <button class="mode-button" id="openModes"><span class="mode-dot"></span><span id="modeButtonText">VYRA-2.5-Flash</span>⌄</button>
+    </header>
+
+    <section class="chat" id="chat">
+      <div class="chat-inner" id="messages"></div>
+    </section>
+
+    <div class="composer-wrap">
+      <div class="think-chip" id="thinkChip"><span>✦ Think aktif</span></div>
+      <form class="composer" id="composer">
+        <button class="plus-btn" id="plusBtn" type="button" aria-label="Tools">＋</button>
+        <div class="plus-menu" id="plusMenu">
+          <button type="button" id="thinkToggle"><span class="tool-icon">✦</span><span><b>Think</b><br><small style="color:#8f9aae">Mode berpikir lebih dalam</small></span></button>
+        </div>
+        <textarea id="messageInput" rows="1" placeholder="Kirim pesan ke VYRA..."></textarea>
+        <button class="send-btn" type="submit" aria-label="Kirim">➤</button>
+      </form>
+    </div>
+  </main>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<section class="mode-sheet" id="modeSheet" aria-label="Pilih mode VYRA">
+  <div class="mode-head"><h3>Pilih Mode VYRA</h3><button class="mode-close" id="closeModes">✕</button></div>
+  <div class="mode-list" id="modeList"></div>
+</section>
+
+<script>
+const MODES = [
+  {
+    id:"flash",name:"VYRA-2.5-Flash",badge:"Flash",
+    description:"Cepat dan pintar. Untuk coding, hasil ditampilkan menggunakan code block.",
+    limit:342,fileMode:"codeblock",
+    backendModel:"groq/qwen/qwen-3-32b",
+    selectable:true
+  },
+  {
+    id:"core",name:"VYRA-1.5-Core",badge:"Core",
+    description:"Pintar dan fokus pada pembuatan file. Hasil coding dibuat langsung sebagai file, bukan code block.",
+    limit:789,fileMode:"file",
+    backendModel:"gpt/oss-20b",
+    selectable:true
+  },
+  {
+    id:"maks",name:"VYRA-1.0-Maks",badge:"Maks",
+    description:"Mendukung dua cara: code block selama chat dan file siap download/install di akhir.",
+    limit:1120,fileMode:"hybrid",
+    backendModel:"gpt/oss-120b",
+    selectable:true
+  },
+  {
+    id:"expert",name:"VYRA-1.9-Expert",badge:"Expert",
+    description:"Mode paling luas untuk coding kompleks. Mendukung code block dan file siap install.",
+    limit:3063,fileMode:"hybrid",
+    backendModel:"groq/deepseek-r1-distill-llama-70b",
+    selectable:true
+  },
+  {
+    id:"vision-preview",name:"VYRA-2.5-Flash-Preview",badge:"Preview",
+    description:"Dirancang untuk memahami gambar yang dikirim pengguna, menjelaskan maknanya, dan membantu membuat prompt gambar.",
+    limit:null,fileMode:"vision",
+    backendModel:"VISION_MODEL_RESERVED",
+    selectable:false,lockedReason:"Dikunci sampai fitur upload gambar ditambahkan."
+  }
+];
+
+const sidebar=document.getElementById("sidebar"),overlay=document.getElementById("overlay"),historyEl=document.getElementById("history"),
+messagesEl=document.getElementById("messages"),input=document.getElementById("messageInput"),composer=document.getElementById("composer"),
+modeSheet=document.getElementById("modeSheet"),modeList=document.getElementById("modeList"),modeButtonText=document.getElementById("modeButtonText"),
+plusMenu=document.getElementById("plusMenu"),thinkChip=document.getElementById("thinkChip");
+
+let chats=JSON.parse(localStorage.getItem("vyra_chats")||"{}");
+let currentId=localStorage.getItem("vyra_current")||"";
+let selectedMode=localStorage.getItem("vyra_mode")||"flash";
+let thinkEnabled=localStorage.getItem("vyra_think")==="true";
+
+function uid(){return "c_"+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function save(){
+  localStorage.setItem("vyra_chats",JSON.stringify(chats));
+  localStorage.setItem("vyra_current",currentId);
+  localStorage.setItem("vyra_mode",selectedMode);
+  localStorage.setItem("vyra_think",String(thinkEnabled));
+}
+function currentMode(){return MODES.find(m=>m.id===selectedMode)||MODES[0]}
+function createChat(){
+  currentId=uid();chats[currentId]={title:"New Chat",messages:[],updated:Date.now()};save();renderHistory();renderMessages();closeSidebar();input.focus()
+}
+function openSidebar(){sidebar.classList.add("open");overlay.classList.add("open")}
+function closeSidebar(){sidebar.classList.remove("open");if(!modeSheet.classList.contains("open"))overlay.classList.remove("open")}
+document.getElementById("openHistory").onclick=openSidebar;
+document.getElementById("closeHistory").onclick=closeSidebar;
+document.getElementById("newChat").onclick=createChat;
+overlay.onclick=()=>{closeSidebar();closeModeSheet()};
+
+function renderHistory(){
+  historyEl.innerHTML="";
+  const ids=Object.keys(chats).sort((a,b)=>(chats[b].updated||0)-(chats[a].updated||0));
+  if(!ids.length){historyEl.innerHTML='<div style="color:#70798b;font-size:13px;padding:8px">Belum ada percakapan.</div>';return}
+  ids.forEach(id=>{
+    const b=document.createElement("button");b.type="button";b.textContent=chats[id].title||"New Chat";
+    if(id===currentId)b.classList.add("active");
+    b.onclick=()=>{currentId=id;save();renderHistory();renderMessages();closeSidebar()};
+    historyEl.appendChild(b)
+  })
+}
+function welcome(){
+  const m=currentMode();
+  messagesEl.innerHTML=`<div class="welcome">
+    <img src="assets/vyra-logo.png" class="welcome-logo" alt="Logo VYRA">
+    <h1>VYRA</h1>
+    <p>Apa yang ingin kamu lakukan hari ini?</p>
+    <div class="welcome-mode"><span class="mode-dot"></span>${m.name}${thinkEnabled?' • Think':''}</div>
+  </div>`
+}
+function renderMessages(){
+  const c=chats[currentId];
+  if(!c||!c.messages.length){welcome();return}
+  messagesEl.innerHTML="";
+  c.messages.forEach(m=>{
+    const row=document.createElement("div");row.className="message "+m.role;
+    if(m.role==="assistant"){
+      const av=document.createElement("div");av.className="avatar";av.innerHTML='<img src="assets/vyra-logo.png" alt="VYRA">';row.appendChild(av)
+    }
+    const bubble=document.createElement("div");bubble.className="bubble";bubble.textContent=m.content;row.appendChild(bubble);messagesEl.appendChild(row)
+  });
+  requestAnimationFrame(()=>document.getElementById("chat").scrollTop=document.getElementById("chat").scrollHeight)
+}
+function renderModes(){
+  modeList.innerHTML="";
+  MODES.forEach(m=>{
+    const card=document.createElement("button");card.type="button";card.className="mode-card";
+    if(m.id===selectedMode)card.classList.add("selected");
+    if(!m.selectable)card.classList.add("locked");
+    card.innerHTML=`<div class="mode-title"><span class="mode-dot"></span>${m.name}<span class="mode-badge">${m.badge}</span></div>
+      <p>${m.description}</p>
+      <div class="mode-meta">${m.limit?`<span>Batas coding: ${m.limit} baris</span>`:""}${!m.selectable?`<span class="lock-text">🔒 ${m.lockedReason}</span>`:""}</div>`;
+    if(m.selectable)card.onclick=()=>{selectedMode=m.id;save();updateModeUI();closeModeSheet();renderMessages()};
+    modeList.appendChild(card)
+  })
+}
+function updateModeUI(){modeButtonText.textContent=currentMode().name;renderModes();thinkChip.classList.toggle("show",thinkEnabled)}
+function openModeSheet(){modeSheet.classList.add("open");overlay.classList.add("open")}
+function closeModeSheet(){modeSheet.classList.remove("open");if(!sidebar.classList.contains("open"))overlay.classList.remove("open")}
+document.getElementById("openModes").onclick=openModeSheet;
+document.getElementById("closeModes").onclick=closeModeSheet;
+
+document.getElementById("plusBtn").onclick=e=>{e.stopPropagation();plusMenu.classList.toggle("open")};
+document.addEventListener("click",e=>{if(!plusMenu.contains(e.target)&&e.target.id!=="plusBtn")plusMenu.classList.remove("open")});
+document.getElementById("thinkToggle").onclick=()=>{
+  thinkEnabled=!thinkEnabled;save();updateModeUI();plusMenu.classList.remove("open");renderMessages()
+};
+
+composer.onsubmit=e=>{
+  e.preventDefault();const text=input.value.trim();if(!text)return;
+  if(!currentId||!chats[currentId])createChat();
+  const c=chats[currentId];
+  if(!c.messages.length)c.title=text.length>40?text.slice(0,40)+"…":text;
+  c.messages.push({role:"user",content:text});
+  c.messages.push({role:"assistant",content:`VYRA UI siap. Mode aktif: ${currentMode().name}${thinkEnabled?" + Think":""}. Backend AI belum disambungkan pada tahap ini.`});
+  c.updated=Date.now();input.value="";input.style.height="auto";save();renderHistory();renderMessages()
+};
+input.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();composer.requestSubmit()}};
+input.oninput=()=>{input.style.height="auto";input.style.height=Math.min(input.scrollHeight,170)+"px"};
+
+if(!currentId||!chats[currentId])createChat();
+updateModeUI();renderHistory();renderMessages();
+</script>
+</body>
+</html>
